@@ -2,7 +2,7 @@
 
 @font-face {
   font-family: "Louis";
-  src: url("/src/assets/fonts/louisregular.otf") format("opentype");
+  src: url("/louisregular.otf") format("opentype");
   font-weight: normal;
   font-style: normal;
 }

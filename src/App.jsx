@@ -1,5 +1,6 @@
 import { useState } from "react";
 import "./App.css";
+import { crearEncuestaServicio } from "./lib/apiServicio";
  
 const GOLD = "#C9A75D";
 const GOLD_DIM = "rgba(201,167,93,0.15)";
@@ -140,7 +141,6 @@ function StepShell({ step, onBack, children }) {
       </div>
  
       <div className="relative z-10 flex flex-col min-h-screen py-10 px-6">
-        {/* Brand pill */}
         <div className="flex justify-center mb-6">
           <span style={{ borderColor: GOLD_BORDER, color: GOLD }}
             className="border text-xs font-bold tracking-widest uppercase px-5 py-1.5 rounded-full backdrop-blur">
@@ -148,7 +148,6 @@ function StepShell({ step, onBack, children }) {
           </span>
         </div>
  
-        {/* Título */}
         <div className="text-center mb-12">
           <h1 className="text-4xl sm:text-5xl font-bold text-white mb-3 leading-tight">
             Encuesta de Satisfacción
@@ -159,7 +158,6 @@ function StepShell({ step, onBack, children }) {
           </p>
         </div>
  
-        {/* Pregunta */}
         <div className="flex-1 flex flex-col items-center w-full">
           <div className="w-full max-w-2xl">
             <div className="mb-4">
@@ -175,7 +173,6 @@ function StepShell({ step, onBack, children }) {
           </div>
         </div>
  
-        {/* Footer */}
         <div className="flex items-center justify-between mt-10 w-full max-w-2xl mx-auto">
           <button
             onClick={onBack}
@@ -215,6 +212,53 @@ function SuccessScreen({ onReset }) {
   );
 }
  
+// Pantalla de carga mientras se envía
+function LoadingScreen() {
+  return (
+    <div style={{ background: DARK }} className="min-h-screen flex items-center justify-center px-6">
+      <div className="text-center">
+        <div
+          style={{ borderColor: GOLD, borderTopColor: "transparent" }}
+          className="w-16 h-16 rounded-full border-4 animate-spin mx-auto mb-6"
+        />
+        <p style={{ color: GOLD }} className="text-lg font-bold tracking-wide">
+          Enviando respuestas...
+        </p>
+      </div>
+    </div>
+  );
+}
+ 
+// Pantalla de error al enviar
+function ErrorScreen({ mensaje, onReintentar, onReset }) {
+  return (
+    <div style={{ background: DARK }} className="min-h-screen flex items-center justify-center px-6">
+      <div className="text-center max-w-md">
+        <div
+          style={{ border: `2px solid ${GOLD}`, color: GOLD }}
+          className="w-20 h-20 rounded-full flex items-center justify-center text-4xl mx-auto mb-6"
+        >
+          ✕
+        </div>
+        <h2 className="text-2xl font-bold text-white mb-3">Error al enviar</h2>
+        <p className="text-white/50 mb-8 leading-relaxed text-sm">{mensaje}</p>
+        <div className="flex gap-4 justify-center">
+          <button onClick={onReintentar}
+            style={{ background: `linear-gradient(135deg, ${GOLD}, #a8782e)`, color: DARK }}
+            className="font-bold px-6 py-3 rounded-full hover:brightness-110 transition-all">
+            Reintentar
+          </button>
+          <button onClick={onReset}
+            style={{ background: GOLD_DIM, borderColor: GOLD_BORDER, color: GOLD }}
+            className="font-bold px-6 py-3 rounded-full border hover:brightness-110 transition-all">
+            Nueva encuesta
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+ 
 const STEPS = [
   { id: "orden",              pill: "Orden",        type: "order",  question: "¿Cuál es su número de orden?" },
   { id: "calAgenda",          pill: "Calificación", type: "rating", question: "¿Cómo calificaría la atención recibida al momento de agendar su cita?" },
@@ -227,29 +271,50 @@ const STEPS = [
   { id: "mejora",             pill: "Comentarios",  type: "text",   question: "¿Qué podemos hacer para mejorar su experiencia?", placeholder: "Escriba sus comentarios aquí...", optional: true },
 ];
  
+const FORM_INICIAL = {
+  orden: "", calAgenda: null, calGeneral: null,
+  inventarioMostrado: null, consultorClaro: null,
+  invitadoInventario: null, multipuntos: null,
+  expectativa: null, mejora: "",
+};
+ 
 export default function App() {
   const [current, setCurrent] = useState(0);
-  const [submitted, setSubmitted] = useState(false);
-  const [form, setForm] = useState({
-    orden: "", calAgenda: null, calGeneral: null,
-    inventarioMostrado: null, consultorClaro: null,
-    invitadoInventario: null, multipuntos: null,
-    expectativa: null, mejora: "",
-  });
+  const [estado, setEstado] = useState("encuesta"); // "encuesta" | "loading" | "success" | "error"
+  const [errorMsg, setErrorMsg] = useState("");
+  const [form, setForm] = useState({ ...FORM_INICIAL });
  
   const step = STEPS[current];
   const handleChange = (val) => setForm((p) => ({ ...p, [step.id]: val }));
-  const handleNext = () => current < STEPS.length - 1 ? setCurrent((c) => c + 1) : setSubmitted(true);
-  const handleBack = () => current > 0 && setCurrent((c) => c - 1);
-  const handleReset = () => {
-    setForm({ orden: "", calAgenda: null, calGeneral: null, inventarioMostrado: null,
-              consultorClaro: null, invitadoInventario: null, multipuntos: null,
-              expectativa: null, mejora: "" });
-    setCurrent(0);
-    setSubmitted(false);
+ 
+  const handleNext = async () => {
+    // Si es el último paso → enviar a la API
+    if (current === STEPS.length - 1) {
+      setEstado("loading");
+      try {
+        await crearEncuestaServicio(form);
+        setEstado("success");
+      } catch (err) {
+        setErrorMsg(err.message || "Error desconocido al enviar.");
+        setEstado("error");
+      }
+      return;
+    }
+    setCurrent((c) => c + 1);
   };
  
-  if (submitted) return <SuccessScreen onReset={handleReset} />;
+  const handleBack = () => current > 0 && setCurrent((c) => c - 1);
+ 
+  const handleReset = () => {
+    setForm({ ...FORM_INICIAL });
+    setCurrent(0);
+    setEstado("encuesta");
+    setErrorMsg("");
+  };
+ 
+  if (estado === "loading") return <LoadingScreen />;
+  if (estado === "success") return <SuccessScreen onReset={handleReset} />;
+  if (estado === "error")   return <ErrorScreen mensaje={errorMsg} onReintentar={() => handleNext()} onReset={handleReset} />;
  
   const props = { step, value: form[step.id], onChange: handleChange, onNext: handleNext, onBack: handleBack };
  
