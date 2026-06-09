@@ -44,8 +44,7 @@ function obtenerMensajeError(data) {
 export async function crearEncuestaServicio(respuestas) {
   const payload = {
     numero_OS: limpiarTexto(respuestas.orden),
-
-    // Convierte 1-10 → 1-5
+    asesor: limpiarTexto(respuestas.asesor),
     satisfaccion_agendar_cita:
       convertirCalificacion(respuestas.calAgenda),
 
