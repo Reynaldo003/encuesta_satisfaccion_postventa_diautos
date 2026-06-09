@@ -1,5 +1,3 @@
-// src/lib/apiServicio.js
-
 const API_URL =
   import.meta.env.VITE_API_URL || "https://crmchevrolet.grupoautomotrizryr.com/encuestas";
 function limpiarTexto(valor) {
@@ -11,7 +9,6 @@ function convertirNumero(valor) {
   return Number.isFinite(numero) ? numero : 0;
 }
 
-// Convierte escala 1-10 a 1-5
 function convertirCalificacion(valor) {
   return Math.ceil(Number(valor) / 2);
 }

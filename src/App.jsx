@@ -6,6 +6,34 @@ const GOLD = "#C9A75D";
 const GOLD_DIM = "rgba(201,167,93,0.15)";
 const GOLD_BORDER = "rgba(201,167,93,0.40)";
 const DARK = "#0F172A";
+
+const ASESORES = [
+  "ALBERTO TORRES",
+  "ALMA HERNANDEZ",
+  "ANGELES VALERIO",
+  "CARLOS VAZQUEZ",
+  "DAVID RIOS",
+  "GABRIELA POMPEYO",
+  "GUADALUPE SANCHEZ",
+  "ISRAEL NIETO",
+  "IVETTE MATA",
+  "JAIR SOLARES",
+  "JAVIER VALENCIA",
+  "JOSUE SEGOVIA",
+  "KARINA CORTES",
+  "LORENZA RINCON",
+  "LUIS DAVID CASTILLO",
+  "MAGDALENA MOLINA",
+  "PEDRO MENDOZA",
+  "RAQUEL SOLIS",
+  "REYNA MORA",
+  "ROMAN LUGO",
+  "SILVIA LARA",
+  "CASA",
+  "GRISELDA NEVAREZ",
+  "EDER MONTERO",
+  "GASPAR PANTOJA",
+];
  
 function BtnContinuar({ onClick, disabled = false }) {
   return (
@@ -127,6 +155,34 @@ function OrderStep({ step, value, onChange, onNext, onBack }) {
     </StepShell>
   );
 }
+
+function AsesorStep({ step, value, onChange, onNext, onBack }) {
+  const select = (nombre) => { onChange(nombre); setTimeout(onNext, 300); };
+  return (
+    <StepShell step={step} onBack={onBack}>
+      <div
+        className="grid mt-6 gap-2.5"
+        style={{ gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))" }}
+      >
+        {ASESORES.map((a) => (
+          <button
+            key={a}
+            type="button"
+            onClick={() => select(a)}
+            style={value === a
+              ? { background: "rgba(201,167,93,0.22)", borderColor: GOLD, color: GOLD, boxShadow: `0 0 14px rgba(201,167,93,0.35)` }
+              : { background: "rgba(255,255,255,0.06)", borderColor: "rgba(201,167,93,0.30)", color: "rgba(255,255,255,0.80)" }
+            }
+            className="px-3 py-3.5 rounded-2xl border text-xs font-bold tracking-wide transition-all duration-200 hover:scale-105 text-center leading-snug"
+          >
+            {a}
+          </button>
+        ))}
+      </div>
+      {value && <BtnContinuar onClick={onNext} />}
+    </StepShell>
+  );
+}
  
 function StepShell({ step, onBack, children }) {
   return (
@@ -212,7 +268,6 @@ function SuccessScreen({ onReset }) {
   );
 }
  
-// Pantalla de carga mientras se envía
 function LoadingScreen() {
   return (
     <div style={{ background: DARK }} className="min-h-screen flex items-center justify-center px-6">
@@ -229,7 +284,6 @@ function LoadingScreen() {
   );
 }
  
-// Pantalla de error al enviar
 function ErrorScreen({ mensaje, onReintentar, onReset }) {
   return (
     <div style={{ background: DARK }} className="min-h-screen flex items-center justify-center px-6">
@@ -261,6 +315,7 @@ function ErrorScreen({ mensaje, onReintentar, onReset }) {
  
 const STEPS = [
   { id: "orden",              pill: "Orden",        type: "order",  question: "¿Cuál es su número de orden?" },
+  { id: "asesor",             pill: "Asesor",       type: "asesor", question: "¿Qué asesor le atendió?" },
   { id: "calAgenda",          pill: "Calificación", type: "rating", question: "¿Cómo calificaría la atención recibida al momento de agendar su cita?" },
   { id: "calGeneral",         pill: "Calificación", type: "rating", question: "¿Cómo calificaría su experiencia general en el área de Servicio?" },
   { id: "inventarioMostrado", pill: "Proceso",      type: "yesno",  question: "¿Le mostraron el inventario inicial de su vehículo?" },
@@ -272,7 +327,7 @@ const STEPS = [
 ];
  
 const FORM_INICIAL = {
-  orden: "", calAgenda: null, calGeneral: null,
+  orden: "", asesor: null, calAgenda: null, calGeneral: null,
   inventarioMostrado: null, consultorClaro: null,
   invitadoInventario: null, multipuntos: null,
   expectativa: null, mejora: "",
@@ -280,7 +335,7 @@ const FORM_INICIAL = {
  
 export default function App() {
   const [current, setCurrent] = useState(0);
-  const [estado, setEstado] = useState("encuesta"); // "encuesta" | "loading" | "success" | "error"
+  const [estado, setEstado] = useState("encuesta");
   const [errorMsg, setErrorMsg] = useState("");
   const [form, setForm] = useState({ ...FORM_INICIAL });
  
@@ -288,7 +343,6 @@ export default function App() {
   const handleChange = (val) => setForm((p) => ({ ...p, [step.id]: val }));
  
   const handleNext = async () => {
-    // Si es el último paso → enviar a la API
     if (current === STEPS.length - 1) {
       setEstado("loading");
       try {
@@ -321,6 +375,7 @@ export default function App() {
   return (
     <>
       {step.type === "order"  && <OrderStep  {...props} />}
+      {step.type === "asesor" && <AsesorStep {...props} />}
       {step.type === "rating" && <RatingStep {...props} />}
       {step.type === "yesno"  && <YesNoStep  {...props} />}
       {step.type === "text"   && <TextStep   {...props} placeholder={step.placeholder} />}
